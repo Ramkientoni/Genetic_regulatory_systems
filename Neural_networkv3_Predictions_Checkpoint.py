@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
+import json
 from tensorflow import keras
 from tensorflow.keras.callbacks import ModelCheckpoint
 
@@ -55,6 +56,10 @@ history = model.fit(
     callbacks=[checkpoint_callback]  # Agregar el callback aquí
 )
 
+# Guardar la historia de entrenamiento en un archivo CSV
+history_df = pd.DataFrame(history.history)
+history_df.to_csv('history.csv', index=False)
+
 # Evaluar el modelo en el conjunto de prueba
 loss = model.evaluate(X_test, y_test)
 print(f"Pérdida en el conjunto de prueba: {loss}")
@@ -62,7 +67,19 @@ print(f"Pérdida en el conjunto de prueba: {loss}")
 # Usar el modelo para hacer predicciones
 predictions = model.predict(X_test)
 
-# Aquí puedes realizar cualquier otra tarea de postprocesamiento o análisis de resultados según tus necesidades.
+# Guardar la configuración del modelo en un archivo JSON
+model_config = {
+    'layers': [layer.get_config() for layer in model.layers],
+    'optimizer': model.optimizer.get_config(),
+    'loss': model.loss
+}
+with open('model_config.json', 'w') as config_file:
+    json.dump(model_config, config_file)
+
+# Registrar métricas de evaluación en un archivo
+with open('evaluation_metrics.txt', 'w') as metrics_file:
+    metrics_file.write(f'Pérdida en el conjunto de prueba: {loss}\n')
+
 # Visualizar las predicciones
 # Indexar las predicciones y los valores reales para 'u' y 'v'
 predictions_u = predictions[:, 0]

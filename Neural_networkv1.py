@@ -48,3 +48,4 @@ print(f"Pérdida en el conjunto de prueba: {loss}")
 predictions = model.predict(X_test)
 
 # Aquí puedes realizar cualquier otra tarea de postprocesamiento o análisis de resultados según tus necesidades.
+
