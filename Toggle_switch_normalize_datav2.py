@@ -46,7 +46,7 @@ alfa_values = alfa_values[:num_iterations]
 csv_filename = 'datos_puntos_estacionarios.csv'
 
 # Parámetros para la normalización
-scaler = StandardScaler()
+#scaler = StandardScaler()
 
 # Comprobar si el archivo CSV ya existe
 if not os.path.isfile(csv_filename):
@@ -75,10 +75,10 @@ for i in range(num_iterations):
     # Si se ha acumulado suficiente cantidad de datos en el búfer, escribirlos en el archivo CSV y vaciar el búfer
     if len(data_buffer) >= chunk_size:
         # Aplicar la normalización a los datos antes de escribirlos
-        data_normalized = scaler.fit_transform(data_buffer)
+        #data_normalized = scaler.fit_transform(data_buffer) - No normalizar por perdida de de informacion
 
         # Dividir datos en conjuntos de entrenamiento, validación y prueba
-        X_train, X_temp, y_train, y_temp = train_test_split(data_normalized[:, :-1], data_normalized[:, :2], test_size=0.1, random_state=42)
+        X_train, X_temp, y_train, y_temp = train_test_split(data_buffer[:, :-1], data_buffer[:, :2], test_size=0.1, random_state=42)
         X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
 
         # Asignar identificador de conjunto: 0 para entrenamiento, 1 para validación, 2 para prueba
@@ -100,10 +100,10 @@ for i in range(num_iterations):
 # Si hay datos restantes en el búfer, escribirlos en el archivo CSV
 if data_buffer:
     # Aplicar la normalización a los datos antes de escribirlos
-    data_normalized = scaler.fit_transform(data_buffer)
+    #data_normalized = scaler.fit_transform(data_buffer)
 
     # Dividir datos en conjuntos de entrenamiento, validación y prueba
-    X_train, X_temp, y_train, y_temp = train_test_split(data_normalized[:, :-1], data_normalized[:, :2], test_size=0.1, random_state=42)
+    X_train, X_temp, y_train, y_temp = train_test_split(data_buffer[:, :-1], data_buffer[:, :2], test_size=0.1, random_state=42)
     X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
 
     # Asignar identificador de conjunto: 0 para entrenamiento, 1 para validación, 2 para prueba
