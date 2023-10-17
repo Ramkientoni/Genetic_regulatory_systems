@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy.optimize import fsolve
 import csv
 import os
@@ -14,7 +15,7 @@ def equations(x, beta, n, K, gamma, alfa):
     return [du_dt, dv_dt]
 
 # Parámetros
-num_iterations = 10000000  # Número de iteraciones para generar datos
+num_iterations = 5000000  # Número de iteraciones para generar datos
 chunk_size = 1000  # Tamaño del chunk
 n = 2
 
@@ -43,17 +44,14 @@ gamma_values = gamma_values[:num_iterations]
 alfa_values = alfa_values[:num_iterations]
 
 # Crear archivo CSV para almacenar datos
-csv_filename = 'datos_puntos_estacionarios.csv'
-
-# Parámetros para la normalización
-#scaler = StandardScaler()
+csv_filename = 'datos_puntos_estacionarios_5mill.csv'
 
 # Comprobar si el archivo CSV ya existe
 if not os.path.isfile(csv_filename):
     # Si no existe, crea el encabezado
     with open(csv_filename, mode='w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(['u', 'v', 'n', 'beta', 'K', 'gamma', 'alfa', 'split'])  # Agregar columna 'split'
+        writer.writerow(['u', 'v', 'du_dt', 'dv_dt' 'n', 'beta', 'K', 'gamma', 'alfa', 'split'])  # Agregar columna 'split'
 
 # Inicializar lista para almacenar datos
 data_buffer = []
@@ -70,12 +68,10 @@ for i in range(num_iterations):
     u, v = fsolve(equations, initial_guess, args=(beta, n, K, gamma, alfa))
 
     # Agregar datos al búfer con el identificador de conjunto
-    data_buffer.append([u, v, n, beta, K, gamma, alfa, 0])  # 0 para conjunto de entrenamiento
+    data_buffer.append([u, v, du_dt, dv_dt, n, beta, K, gamma, alfa, 0])  # 0 para conjunto de entrenamiento
 
     # Si se ha acumulado suficiente cantidad de datos en el búfer, escribirlos en el archivo CSV y vaciar el búfer
     if len(data_buffer) >= chunk_size:
-        # Aplicar la normalización a los datos antes de escribirlos
-        #data_normalized = scaler.fit_transform(data_buffer) - No normalizar por perdida de de informacion
 
         # Dividir datos en conjuntos de entrenamiento, validación y prueba
         X_train, X_temp, y_train, y_temp = train_test_split(data_buffer[:, :-1], data_buffer[:, :2], test_size=0.1, random_state=42)
@@ -91,7 +87,7 @@ for i in range(num_iterations):
         for j in range(len(X_train) + len(X_val), len(data_buffer)):
             data_buffer[j][-1] = 2
 
-        # Guardar datos normalizados y con identificador de conjunto en el archivo CSV
+        # Guardar datos con identificador de conjunto en el archivo CSV
         with open(csv_filename, mode='a', newline='') as file:
             writer = csv.writer(file)
             writer.writerows(data_buffer)
@@ -99,8 +95,6 @@ for i in range(num_iterations):
 
 # Si hay datos restantes en el búfer, escribirlos en el archivo CSV
 if data_buffer:
-    # Aplicar la normalización a los datos antes de escribirlos
-    #data_normalized = scaler.fit_transform(data_buffer)
 
     # Dividir datos en conjuntos de entrenamiento, validación y prueba
     X_train, X_temp, y_train, y_temp = train_test_split(data_buffer[:, :-1], data_buffer[:, :2], test_size=0.1, random_state=42)
@@ -116,7 +110,7 @@ if data_buffer:
     for j in range(len(X_train) + len(X_val), len(data_buffer)):
         data_buffer[j][-1] = 2
 
-    # Guardar datos normalizados y con identificador de conjunto en el archivo CSV
+    # Guardar datos con identificador de conjunto en el archivo CSV
     with open(csv_filename, mode='a', newline='') as file:
         writer = csv.writer(file)
         writer.writerows(data_buffer)
@@ -131,3 +125,37 @@ print("Cantidad de datos para entrenamiento:", counts[0])
 print("Cantidad de datos para validacion:", counts[1])
 print("Cantidad de datos para prueba:", counts[2])
 print("Generación y escritura de datos completadas.")
+
+# Graficar espacio fase
+# Extraer las columnas relevantes
+u = df['u']
+v = df['v']
+du_dt = df['du_dt']  # Asegúrate de tener la columna 'du_dt' en tu archivo CSV
+dv_dt = df['dv_dt']  # Asegúrate de tener la columna 'dv_dt' en tu archivo CSV
+
+# Crear gráficos de dispersión
+plt.figure(figsize=(15, 5))
+
+# Gráfico 1: u vs du_dt
+plt.subplot(131)
+plt.scatter(u, du_dt, alpha=0.5)
+plt.xlabel('u')
+plt.ylabel('du_dt')
+plt.title('u vs du_dt')
+
+# Gráfico 2: v vs dv_dt
+plt.subplot(132)
+plt.scatter(v, dv_dt, alpha=0.5)
+plt.xlabel('v')
+plt.ylabel('dv_dt')
+plt.title('v vs dv_dt')
+
+# Gráfico 3: du_dt vs dv_dt
+plt.subplot(133)
+plt.scatter(du_dt, dv_dt, alpha=0.5)
+plt.xlabel('du_dt')
+plt.ylabel('dv_dt')
+plt.title('du_dt vs dv_dt')
+
+plt.tight_layout()
+plt.show()
