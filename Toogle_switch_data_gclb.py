@@ -146,26 +146,26 @@ for n in n_values:
                 writer.writerows(data_buffer)
             data_buffer = np.array([]).reshape(0,10) # Vaciar Lista
 
-        # Si hay datos restantes en el búfer, escribirlos en el archivo CSV
-        if data_buffer.shape[0] > 0:
-            # Dividir datos en conjuntos de entrenamiento, validación y prueba
-            X_train, X_temp, y_train, y_temp = train_test_split(data_buffer[:, :-1], data_buffer[:, :2], test_size=0.1, random_state=42)
-            X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
+    # Si hay datos restantes en el búfer, escribirlos en el archivo CSV
+    if data_buffer.shape[0] > 0:
+        # Dividir datos en conjuntos de entrenamiento, validación y prueba
+        X_train, X_temp, y_train, y_temp = train_test_split(data_buffer[:, :-1], data_buffer[:, :2], test_size=0.1, random_state=42)
+        X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
 
-            # Asignar identificador de conjunto: 0 para entrenamiento, 1 para validación, 2 para prueba
-            for j in range(len(X_train)):
-              data_buffer[j][-1] = 0
+        # Asignar identificador de conjunto: 0 para entrenamiento, 1 para validación, 2 para prueba
+        for j in range(len(X_train)):
+          data_buffer[j][-1] = 0
 
-            for j in range(len(X_train), len(X_train) + len(X_val)):
-              data_buffer[j][-1] = 1
+        for j in range(len(X_train), len(X_train) + len(X_val)):
+          data_buffer[j][-1] = 1
 
-            for j in range(len(X_train) + len(X_val), len(data_buffer)):
-              data_buffer[j][-1] = 2
+        for j in range(len(X_train) + len(X_val), len(data_buffer)):
+          data_buffer[j][-1] = 2
 
-            # Guardar datos con identificador de conjunto en el archivo CSV
-            with open(csv_filename, mode='a', newline='') as file:
-                writer = csv.writer(file)
-                writer.writerows(data_buffer)
+        # Guardar datos con identificador de conjunto en el archivo CSV
+        with open(csv_filename, mode='a', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerows(data_buffer)
 
 # Lectura de datos desde CSV y analisis
 df = pd.read_csv(csv_filename)
