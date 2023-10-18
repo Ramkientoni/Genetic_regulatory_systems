@@ -16,7 +16,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 
 # Función para resolver el sistema de ecuaciones
-def equations(x, beta, n, K, gamma, alfa):
+def equations(x, beta, n, K1, K2, gamma1, gamma2, alfa):
     u, v = x
     du_dt = (beta / (1 + (v/K1) ** n)) - gamma1*u
     dv_dt = (alfa / (1 + (u/K2) ** n)) - gamma2*v
@@ -88,7 +88,7 @@ beta_values = beta_values[:num_iterations]
 google_drive_folder = '/content/drive/MyDrive/Colab Notebooks/Archivos/'
 
 # Crear archivo CSV para almacenar datos
-csv_filename = os.path.join(google_drive_folder, 'datos_puntos_estacionarios_5mill.csv')
+csv_filename = os.path.join(google_drive_folder, 'datos_puntos_estacionarios_verificados.csv')
 
 # Comprobar si el archivo CSV ya existe
 if not os.path.isfile(csv_filename):
