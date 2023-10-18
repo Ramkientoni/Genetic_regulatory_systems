@@ -167,16 +167,22 @@ for n in n_values:
             writer = csv.writer(file)
             writer.writerows(data_buffer)
 
-# Lectura de datos desde CSV y analisis
 df = pd.read_csv(csv_filename)
+filtered_df = df[df['K1'] + df['K2'] > df['u'] + df['v']]
 
 # Contar la cantidad de datos por etiqueta
 counts = df['split'].value_counts()
+counts_filter = filtered_df['split'].value_counts()
 
 # Imprimir los resultados
-print("Cantidad de datos para entrenamiento:", counts[0])
-print("Cantidad de datos para validacion:", counts[1])
-print("Cantidad de datos para prueba:", counts[2])
+print("Cantidad de datos generados para entrenamiento:", counts[0])
+print("Cantidad de datos generados para validacion:", counts[1])
+print("Cantidad de datos generados para prueba:", counts[2])
+print("Generación y escritura de datos completadas.")
+
+print("Cantidad de datos verificados para entrenamiento:", counts_filter[0])
+print("Cantidad de datos verificados para validacion:", counts_filter[1])
+print("Cantidad de datos verificados para prueba:", counts_filter[2])
 print("Generación y escritura de datos completadas.")
 
 # Crear gráficos del espacio fase
