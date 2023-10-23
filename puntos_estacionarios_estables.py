@@ -36,7 +36,7 @@ def calculate_eigenvalues(x, beta, n, K1, K2, gamma1, gamma2, alfa):
     eigenvalues = np.linalg.eigvals(J)
     return eigenvalues
 
-num_iterations = 1000000  # Número de iteraciones para generar datos
+num_iterations = 5000 # Número de iteraciones para generar datos
 chunk_size = 1000  # Tamaño del chunk
 
 K1_values = np.random.uniform(0, 1, num_iterations) # Constante de Michaelis-Menten
@@ -102,10 +102,10 @@ if not os.path.isfile(csv_filename):
     # Si no existe, crea el encabezado
     with open(csv_filename, mode='w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(['u', 'v', 'du_dt', 'dv_dt', 'n', 'beta', 'alfa', 'K1', 'K2', 'gamma1', 'gamma2', 'split'])  # Agregar columna 'split' y agregar las derivadas
+        writer.writerow(['u', 'v', 'stability identifier', 'n', 'beta', 'alfa', 'K1', 'K2', 'gamma1', 'gamma2', 'split'])  # Agregar columna 'split' y agregar las derivadas
 
 # Inicializar lista para almacenar datos
-data_buffer = np.array([]).reshape(0,12)
+data_buffer = np.array([]).reshape(0,11)
 
 for n in n_values:
 
@@ -119,43 +119,79 @@ for n in n_values:
         beta = beta_values[i]
 
         # Resolver el sistema de ecuaciones para obtener u y v
-        initial_guess = [0.0, 0.0]
-        solution = fsolve(equations, initial_guess, args=(beta, n, K1, K2, gamma1, gamma2, alfa))
-        u, v = solution
+        initial_guesses = [(0.0, 0.0), (0.0, 1.0), (1.0, 0.0), (1.0, 1.0)]
+        solutions = []
+        for initial_guess in initial_guesses:
+            solution = fsolve(equations, initial_guess, args=(beta, n, K1, K2, gamma1, gamma2, alfa))
+            solutions.append(solution)
 
-        # Calcular las derivadas
-        du_dt, dv_dt = calculate_rates(solution, beta, n, K1, K2, gamma1, gamma2, alfa)
+        # Calcular la distancia entre las soluciones
+        distances = np.zeros((len(solutions), len(solutions)))
 
-        if abs(du_dt) < 1e-6 and abs(dv_dt)  < 1e-6:
-          eigenvalues = calculate_eigenvalues(solution, beta, n, K1, K2, gamma1, gamma2, alfa)
+        for i in range(len(solutions)):
+            for j in range(i+1, len(solutions)):
+                distance = np.linalg.norm(np.array(solutions[i]) - np.array(solutions[j]))
+                distances[i, j] = distance
+        
+        threshold = 1e-6
 
+        # Encontrar las soluciones cercanas y calcular los puntos medios
+        close_solutions = set()
+        for i in range(len(solutions)):
+            for j in range(i+1, len(solutions)):
+                if distances[i, j] < threshold:
+                    point1 = solutions[i]
+                    point2 = solutions[j]
+                    midpoint = [(point1[0] + point2[0]) / 2, (point1[1] + point2[1]) / 2]
+                    close_solutions.add([midpoint])
+                else:
+                    point = solutions[i]
+                    close_solutions.add([point])
+
+        close_solutions = list(close_solutions)
+
+        # Calcular las derivadas para todos los valores en solutions
+        du_dt_values = []
+        dv_dt_values = []
+
+        for solution in close_solutions:
+            du_dt, dv_dt = calculate_rates(solution, beta, n, K1, K2, gamma1, gamma2, alfa)
+            du_dt_values.append(du_dt)
+            dv_dt_values.append(dv_dt)
+
+        identifier = 'i'
+        if all(abs(du_dt_values) < threshold) and all(abs(dv_dt_values) < threshold):
+          eigenvalues = calculate_eigenvalues(solutions, beta, n, K1, K2, gamma1, gamma2, alfa)
           if all(np.real(eigenvalues) < 0):
-            # Agregar datos al búfer con el identificador de conjunto
-            data_entry = np.array([u, v, du_dt, dv_dt, n, beta, K1, K2, gamma1, gamma2, alfa, 0])  # 0 para conjunto de entrenamiento
+            identifier = 'e'
+
+        for solution in close_solutions:
+            # Agregar datos al búfer con el identificador de conjunto y el identificador de estabilidad
+            data_entry = np.array(solution[0], solution[1], identifier, n, beta, K1, K2, gamma1, gamma2, alfa, 0])  # 0 para conjunto de entrenamiento
             data_buffer = np.vstack((data_buffer, data_entry))
 
-            # Si se ha acumulado suficiente cantidad de datos en el búfer, escribirlos en el archivo CSV y vaciar el búfer
-            if data_buffer.shape[0] >= chunk_size:
+        # Si se ha acumulado suficiente cantidad de datos en el búfer, escribirlos en el archivo CSV y vaciar el búfer
+        if data_buffer.shape[0] >= chunk_size:
 
-                # Dividir datos en conjuntos de entrenamiento, validación y prueba
-                X_train, X_temp, y_train, y_temp = train_test_split(data_buffer[:, :-1], data_buffer[:, :2], test_size=0.1, random_state=42)
-                X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
+            # Dividir datos en conjuntos de entrenamiento, validación y prueba
+            X_train, X_temp, y_train, y_temp = train_test_split(data_buffer[:, :-1], data_buffer[:, :2], test_size=0.1, random_state=42)
+            X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
 
-                # Asignar identificador de conjunto: 0 para entrenamiento, 1 para validación, 2 para prueba
-                for j in range(len(X_train)):
-                    data_buffer[j][-1] = 0
+            # Asignar identificador de conjunto: 0 para entrenamiento, 1 para validación, 2 para prueba
+            for j in range(len(X_train)):
+                data_buffer[j][-1] = 0
 
-                for j in range(len(X_train), len(X_train) + len(X_val)):
-                    data_buffer[j][-1] = 1
+            for j in range(len(X_train), len(X_train) + len(X_val)):
+                data_buffer[j][-1] = 1
 
-                for j in range(len(X_train) + len(X_val), len(data_buffer)):
-                    data_buffer[j][-1] = 2
+            for j in range(len(X_train) + len(X_val), len(data_buffer)):
+                data_buffer[j][-1] = 2
 
-                # Guardar datos con identificador de conjunto en el archivo CSV
-                with open(csv_filename, mode='a', newline='') as file:
-                    writer = csv.writer(file)
-                    writer.writerows(data_buffer)
-                data_buffer = np.array([]).reshape(0,12) # Vaciar Lista
+            # Guardar datos con identificador de conjunto en el archivo CSV
+            with open(csv_filename, mode='a', newline='') as file:
+                writer = csv.writer(file)
+                writer.writerows(data_buffer)
+            data_buffer = np.array([]).reshape(0,11) # Vaciar Lista
 
     # Si hay datos restantes en el búfer, escribirlos en el archivo CSV
     if data_buffer.shape[0] > 0:
